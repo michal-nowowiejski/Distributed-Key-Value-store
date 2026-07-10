@@ -15,3 +15,9 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+
+# database directories
+*.db/
