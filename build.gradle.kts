@@ -15,6 +15,8 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.rocksdb:rocksdbjni:9.7.3")
+    implementation("info.picocli:picocli:4.7.7")
 }
 
 application {
