@@ -2,9 +2,8 @@ package io.github.michalnowowiejski.distributedkv;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
+import io.github.michalnowowiejski.distributedkv.network.HttpServer;
 import io.github.michalnowowiejski.distributedkv.storage.Database;
-import io.github.michalnowowiejski.distributedkv.storage.DatabaseException;
-import io.javalin.Javalin;
 
 @CommandLine.Command(name = "distributed-kv", mixinStandardHelpOptions = true)
 public class Main {
@@ -21,18 +20,15 @@ public class Main {
         new CommandLine(app).parseArgs(args);
 
         Database db = Database.newDatabase(app.dbLocation);
-
-        var server = Javalin.create(config -> {
-            config.routes.get("/get", ctx -> ctx.result("called get"));
-            config.routes.post("/set", ctx -> ctx.result("called set"));
-        }).start(app.port);
+        HttpServer server = new HttpServer(db);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down server...");
-            server.stop();
+            server.close();
             db.close();
         }));
 
+        server.start(app.port);
         System.out.println("Listening on port " + app.port);
     }
 }
