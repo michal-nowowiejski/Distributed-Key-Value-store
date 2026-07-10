@@ -17,6 +17,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.rocksdb:rocksdbjni:9.7.3")
     implementation("info.picocli:picocli:4.7.7")
+    implementation("io.javalin:javalin:7.2.2")
+    implementation("org.slf4j:slf4j-simple:2.0.17")
 }
 
 application {
