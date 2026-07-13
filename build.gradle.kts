@@ -19,6 +19,7 @@ dependencies {
     implementation("info.picocli:picocli:4.7.7")
     implementation("io.javalin:javalin:7.2.2")
     implementation("org.slf4j:slf4j-simple:2.0.17")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.1")
 }
 
 application {
