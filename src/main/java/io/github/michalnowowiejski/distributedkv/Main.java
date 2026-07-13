@@ -6,6 +6,9 @@ import io.github.michalnowowiejski.distributedkv.network.HttpServer;
 import io.github.michalnowowiejski.distributedkv.storage.Database;
 import io.github.michalnowowiejski.distributedkv.config.Config;
 import io.github.michalnowowiejski.distributedkv.config.ConfigLoader;
+import io.github.michalnowowiejski.distributedkv.sharding.Shard;
+import io.github.michalnowowiejski.distributedkv.sharding.ShardRouter;
+import io.github.michalnowowiejski.distributedkv.sharding.Sharder;
 
 @CommandLine.Command(name = "distributed-kv", mixinStandardHelpOptions = true)
 public class Main {
@@ -13,11 +16,11 @@ public class Main {
     @Option(names = "--db-location", description = "The path to the RocksDB database", required = true)
     private String dbLocation;
 
-    @Option(names = "--port", description = "The port to run the server on", required = true)
-    private int port;
-
     @Option(names = "--config", description = "Configuration file for static sharding")
     private String configFile = "sharding.yaml";
+
+    @Option(names = "--shard", description = "The name of the shard to run this instance on", required = true)
+    private String shardName;
 
     public static void main(String[] args) {
 
@@ -26,9 +29,16 @@ public class Main {
 
         Config config = ConfigLoader.load(app.configFile);
         System.out.println("Loaded configuration: " + config);
-
+        
+        Shard self = config.shards().stream()
+            .filter(s -> s.name().equals(app.shardName))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Shard not found: " + app.shardName));
+        
+        Sharder sharder = new Sharder(config.shards().size());
+        ShardRouter shardRouter = new ShardRouter(sharder, self.idx(), config.shards());
         Database db = Database.newDatabase(app.dbLocation);
-        HttpServer server = new HttpServer(db);
+        HttpServer server = new HttpServer(db, shardRouter);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down server...");
@@ -36,7 +46,9 @@ public class Main {
             db.close();
         }));
 
-        server.start(app.port);
-        System.out.println("Listening on port " + app.port);
+        String address = self.address();
+        int port = Integer.parseInt(address.substring(address.lastIndexOf(':') + 1));
+        server.start(port);
+        System.out.println("Listening on port " + port);
     }
 }

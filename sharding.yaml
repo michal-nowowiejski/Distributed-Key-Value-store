@@ -1,7 +1,10 @@
 shards:
 - name: shard0
   idx: 0
+  address: localhost:8080
 - name: shard1
   idx: 1
+  address: localhost:8081
 - name: shard2
   idx: 2
+  address: localhost:8082
