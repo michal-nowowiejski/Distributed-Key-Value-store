@@ -55,6 +55,10 @@ public class HttpServer implements AutoCloseable {
         ctx.redirect(url, HttpStatus.TEMPORARY_REDIRECT);
     }
 
+    Javalin javalin() {
+        return server;
+    }
+
     @Override
     public void close() {
         server.stop();

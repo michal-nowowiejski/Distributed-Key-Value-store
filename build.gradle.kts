@@ -14,6 +14,7 @@ dependencies {
     // JUnit 5 (Jupiter) for tests. The BOM keeps the module versions aligned.
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.javalin:javalin-testtools:7.2.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.rocksdb:rocksdbjni:9.7.3")
     implementation("info.picocli:picocli:4.7.7")
