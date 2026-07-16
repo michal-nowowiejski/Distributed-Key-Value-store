@@ -6,9 +6,9 @@ import io.github.michalnowowiejski.distributedkv.network.HttpServer;
 import io.github.michalnowowiejski.distributedkv.storage.Database;
 import io.github.michalnowowiejski.distributedkv.config.Config;
 import io.github.michalnowowiejski.distributedkv.config.ConfigLoader;
+import io.github.michalnowowiejski.distributedkv.sharding.HashRing;
 import io.github.michalnowowiejski.distributedkv.sharding.Shard;
 import io.github.michalnowowiejski.distributedkv.sharding.ShardRouter;
-import io.github.michalnowowiejski.distributedkv.sharding.Sharder;
 
 @CommandLine.Command(name = "distributed-kv", mixinStandardHelpOptions = true)
 public class Main {
@@ -35,8 +35,8 @@ public class Main {
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Shard not found: " + app.shardName));
         
-        Sharder sharder = new Sharder(config.shards().size());
-        ShardRouter shardRouter = new ShardRouter(sharder, self.idx(), config.shards());
+        HashRing ring = new HashRing(config.shards());
+        ShardRouter shardRouter = new ShardRouter(ring, self);
         Database db = Database.newDatabase(app.dbLocation);
         HttpServer server = new HttpServer(db, shardRouter);
 

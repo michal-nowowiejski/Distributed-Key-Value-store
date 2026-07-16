@@ -11,8 +11,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.javalin.testtools.JavalinTest;
 import io.javalin.testtools.Response;
+import io.github.michalnowowiejski.distributedkv.sharding.HashRing;
 import io.github.michalnowowiejski.distributedkv.sharding.Shard;
-import io.github.michalnowowiejski.distributedkv.sharding.Sharder;
 import io.github.michalnowowiejski.distributedkv.sharding.ShardRouter;
 import io.github.michalnowowiejski.distributedkv.storage.Database;
 
@@ -24,10 +24,10 @@ class HttpServerTest {
 
     @Test
     void getMissingLocalKeyReturns404(@TempDir Path tempDir) {
-        Sharder sharder = new Sharder(2);
+        HashRing ring = new HashRing(SHARDS);
         try (Database db = Database.newDatabase(tempDir.resolve("db").toString())) {
-            int myIdx = sharder.shardForKey("key");
-            HttpServer server = new HttpServer(db, new ShardRouter(sharder, myIdx, SHARDS));
+            Shard self = ring.shardForKey("key");
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self));
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 assertEquals(404, client.get("/get/key").code());
@@ -37,10 +37,10 @@ class HttpServerTest {
 
     @Test
     void setLocalKeyStoresValueAndReturns201(@TempDir Path tempDir) {
-        Sharder sharder = new Sharder(2);
+        HashRing ring = new HashRing(SHARDS);
         try(Database db = Database.newDatabase(tempDir.resolve("db").toString())) {
-            int myIdx = sharder.shardForKey("key");
-            HttpServer server = new HttpServer(db, new ShardRouter(sharder, myIdx, SHARDS));
+            Shard self = ring.shardForKey("key");
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self));
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 assertEquals(201, client.post("/set/key", "value").code());
@@ -51,11 +51,15 @@ class HttpServerTest {
 
     @Test
     void setRemoteKeyRedirectsWith307(@TempDir Path tempDir){
-        Sharder sharder = new Sharder(2);
+        HashRing ring = new HashRing(SHARDS);
         try(Database db = Database.newDatabase(tempDir.resolve("db").toString())) {
-            int ownerIdx = sharder.shardForKey("key");
-            int myIdx = 1 - ownerIdx;
-            HttpServer server = new HttpServer(db, new ShardRouter(sharder, myIdx, SHARDS));
+            Shard owner = ring.shardForKey("key");
+            Shard self = SHARDS.stream()
+                .filter(s -> !s.equals(owner))
+                .findFirst()
+                .orElseThrow();
+
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self));
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 Response res = client.post("/set/key", "value");
