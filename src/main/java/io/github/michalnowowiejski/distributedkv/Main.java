@@ -48,7 +48,6 @@ public final class Main implements Callable<Integer> {
         }));
         
         server.start(self.port());
-        log.info("Listening on port {}", self.port());
 
         return 0;
     }
