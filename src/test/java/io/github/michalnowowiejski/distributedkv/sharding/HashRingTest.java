@@ -79,6 +79,20 @@ class HashRingTest {
     }
 
     @Test
+    void shardsForKeyReturnsDistinctShards() {
+        HashRing ring = new HashRing(SHARDS);
+        for (int i = 0; i < 1000; i++) {
+            assertEquals(3, ring.shardsForKey("key" + i, 3).size());
+        }
+    }
+
+    @Test
+    void rejectsCountLargerThanShardCount() {
+        HashRing ring = new HashRing(SHARDS);
+        assertThrows(IllegalArgumentException.class, () -> ring.shardsForKey("key", 5));
+    }
+
+    @Test
     void rejectsEmptyRing(){
         assertThrows(IllegalArgumentException.class, () -> new HashRing(new ArrayList<>()));
     }
