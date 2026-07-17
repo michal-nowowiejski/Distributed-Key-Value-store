@@ -15,28 +15,28 @@ class ShardRouterTest {
     );
 
     @Test
-    void ownerAddressReturnsTheOwningShardsAddress() {
+    void primaryAddressReturnsThePrimaryShardsAddress() {
         HashRing ring = new HashRing(SHARDS);
-        ShardRouter router = new ShardRouter(ring, SHARDS.get(0));
+        ShardRouter router = new ShardRouter(ring, SHARDS.get(0), 1);
 
         for (int i = 0; i < 500; i++) {
             String key = "key" + i;
             Shard owner = ring.shardForKey(key);
-            assertEquals(owner.address(), router.ownerAddress(key),
-                "wrong owner address for " + key);
+            assertEquals(owner.address(), router.primaryAddress(key),
+                "wrong primary address for " + key);
         }
     }
 
     @Test
-    void isLocalIsTrueExactlyWhenKeyBelongsToMyShard() {
+    void isPrimaryIsTrueExactlyWhenKeyBelongsToMyShard() {
         HashRing ring = new HashRing(SHARDS);
         Shard self = SHARDS.get(1);
-        ShardRouter router = new ShardRouter(ring, self);
+        ShardRouter router = new ShardRouter(ring, self, 1);
 
         for (int i = 0; i < 500; i++) {
             String key = "key" + i;
             boolean shouldBeLocal = ring.shardForKey(key).equals(self);
-            assertEquals(shouldBeLocal, router.isLocal(key), "isLocal wrong for " + key);
+            assertEquals(shouldBeLocal, router.isPrimary(key), "isPrimary wrong for " + key);
         }
     }
     

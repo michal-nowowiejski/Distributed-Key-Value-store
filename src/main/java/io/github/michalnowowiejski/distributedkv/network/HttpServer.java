@@ -34,7 +34,7 @@ public class HttpServer implements AutoCloseable {
 
     private void handleGet(Context ctx) {
         String key = ctx.pathParam("key");
-        if (router.isLocal(key)){
+        if (router.isPrimary(key)){
             byte[] value = db.getKey(key);
             if (value == null) {
                 ctx.status(404).result("Key not found");
@@ -48,7 +48,8 @@ public class HttpServer implements AutoCloseable {
 
     private void handleSet(Context ctx) {
         String key = ctx.pathParam("key");
-        if (router.isLocal(key)){
+        if (router.isPrimary(key)){
+            //TODO replicate keys 
             byte[] value = ctx.bodyAsBytes();
             db.setKey(key, value);
             ctx.status(201);
@@ -58,7 +59,7 @@ public class HttpServer implements AutoCloseable {
     }
 
     private void redirect(Context ctx, String key) {
-        String url = "http://" + router.ownerAddress(key) + ctx.path();
+        String url = "http://" + router.primaryAddress(key) + ctx.path();
         ctx.redirect(url, HttpStatus.TEMPORARY_REDIRECT);
     }
 

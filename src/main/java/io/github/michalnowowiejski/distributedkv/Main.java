@@ -37,7 +37,9 @@ public final class Main implements Callable<Integer> {
         log.info("Starting {} on {}", self.name(), self.address());
 
         HashRing ring = new HashRing(config.shards());
-        ShardRouter shardRouter = new ShardRouter(ring, self);
+        
+        //TODO retrieve replication factor from config file
+        ShardRouter shardRouter = new ShardRouter(ring, self, 2);
         Database db = Database.newDatabase(dbLocation);
         HttpServer server = new HttpServer(db, shardRouter);
 

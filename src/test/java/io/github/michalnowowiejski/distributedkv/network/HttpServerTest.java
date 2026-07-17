@@ -27,7 +27,7 @@ class HttpServerTest {
         HashRing ring = new HashRing(SHARDS);
         try (Database db = Database.newDatabase(tempDir.resolve("db").toString())) {
             Shard self = ring.shardForKey("key");
-            HttpServer server = new HttpServer(db, new ShardRouter(ring, self));
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1));
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 assertEquals(404, client.get("/get/key").code());
@@ -40,7 +40,7 @@ class HttpServerTest {
         HashRing ring = new HashRing(SHARDS);
         try(Database db = Database.newDatabase(tempDir.resolve("db").toString())) {
             Shard self = ring.shardForKey("key");
-            HttpServer server = new HttpServer(db, new ShardRouter(ring, self));
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1));
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 assertEquals(201, client.post("/set/key", "value").code());
@@ -59,7 +59,7 @@ class HttpServerTest {
                 .findFirst()
                 .orElseThrow();
 
-            HttpServer server = new HttpServer(db, new ShardRouter(ring, self));
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1));
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 Response res = client.post("/set/key", "value");
