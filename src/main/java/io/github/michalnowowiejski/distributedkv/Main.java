@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import io.github.michalnowowiejski.distributedkv.config.Config;
 import io.github.michalnowowiejski.distributedkv.config.ConfigLoader;
 import io.github.michalnowowiejski.distributedkv.network.HttpServer;
+import io.github.michalnowowiejski.distributedkv.network.Replicator;
 import io.github.michalnowowiejski.distributedkv.sharding.HashRing;
 import io.github.michalnowowiejski.distributedkv.sharding.Shard;
 import io.github.michalnowowiejski.distributedkv.sharding.ShardRouter;
@@ -41,7 +42,8 @@ public final class Main implements Callable<Integer> {
         //TODO retrieve replication factor from config file
         ShardRouter shardRouter = new ShardRouter(ring, self, 2);
         Database db = Database.newDatabase(dbLocation);
-        HttpServer server = new HttpServer(db, shardRouter);
+        Replicator replicator = new Replicator();
+        HttpServer server = new HttpServer(db, shardRouter, replicator);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down server...");

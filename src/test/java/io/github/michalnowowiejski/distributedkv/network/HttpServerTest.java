@@ -1,8 +1,14 @@
 package io.github.michalnowowiejski.distributedkv.network;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -27,7 +33,7 @@ class HttpServerTest {
         HashRing ring = new HashRing(SHARDS);
         try (Database db = Database.newDatabase(tempDir.resolve("db").toString())) {
             Shard self = ring.shardForKey("key");
-            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1));
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1), new Replicator());
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 assertEquals(404, client.get("/get/key").code());
@@ -40,7 +46,7 @@ class HttpServerTest {
         HashRing ring = new HashRing(SHARDS);
         try(Database db = Database.newDatabase(tempDir.resolve("db").toString())) {
             Shard self = ring.shardForKey("key");
-            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1));
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1), new Replicator());
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 assertEquals(201, client.post("/set/key", "value").code());
@@ -59,7 +65,7 @@ class HttpServerTest {
                 .findFirst()
                 .orElseThrow();
 
-            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1));
+            HttpServer server = new HttpServer(db, new ShardRouter(ring, self, 1), new Replicator());
 
             JavalinTest.test(server.javalin(), (app, client) -> {
                 Response res = client.post("/set/key", "value");
@@ -67,7 +73,33 @@ class HttpServerTest {
                 assertTrue(res.headers().get("Location").get(0).endsWith("set/key"));
             });
         }
-
     }
+    
+    @Test
+    void writeToPrimaryPropagatesToReplica(@TempDir Path tempDir) throws Exception {
+        HashRing ring = new HashRing(SHARDS);
 
+        String key = "key";
+        Shard primary = ring.shardForKey(key);
+        Shard replica = SHARDS.stream().filter(s -> !s.equals(primary)).findFirst().orElseThrow();
+
+        try (Database primaryDb = Database.newDatabase(tempDir.resolve("primary").toString());
+            Database replicaDb = Database.newDatabase(tempDir.resolve("replica").toString());
+            HttpServer primaryServer = new HttpServer(primaryDb, new ShardRouter(ring, primary, 2), new Replicator());
+            HttpServer replicaServer = new HttpServer(replicaDb, new ShardRouter(ring, replica, 2), new Replicator())) {
+
+            primaryServer.start(primary.port());
+            replicaServer.start(replica.port());
+
+            var res = HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder()
+                    .uri(URI.create("http://" + primary.address() + "/set/" + key))
+                    .POST(HttpRequest.BodyPublishers.ofString("value"))
+                    .build(),
+                HttpResponse.BodyHandlers.discarding());
+
+            assertEquals(201, res.statusCode());
+            assertArrayEquals("value".getBytes(StandardCharsets.UTF_8), replicaDb.getKey(key));
+        }
+    }
 }
